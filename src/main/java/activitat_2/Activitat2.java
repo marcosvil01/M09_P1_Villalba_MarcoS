@@ -17,140 +17,156 @@ import java.util.Base64;
 
 /**
  * Classe que gestiona l'Activitat 2: Xifrat i Desxifrat de Text.
- * Aquesta classe inclou funcionalitats per:
- * - Generar una clau AES a partir d'una contrasenya i un salt
- * - Xifrar un text utilitzant AES en mode CBC
- * - Guardar els resultats en un fitxer CSV
- * - Desxifrar el text i verificar que coincideix amb l'original
+ *
+ * Aquest programa realitza el següent:
+ * 1. Genera la clau simètrica AES a partir de la contrasenya comuna "projecte2025"
+ *    utilitzant el mètode PBKDF2 amb HMAC-SHA256 per derivar una clau segura, afegint un salt.
+ * 2. Xifra el text "Document confidencial" utilitzant AES en mode CBC amb PKCS5Padding.
+ * 3. Desa els resultats (text xifrat, IV i salt) en format CSV.
+ * 4. Desxifra el text i verifica que coincideix amb l'original.
  */
 public class Activitat2 {
 
-    // Contrasenya utilitzada per generar la clau
+    // Contrasenya comuna per derivar la clau AES
     private static final String PASSWORD = "projecte2025";
-    // Text que serà xifrat
+    // Text que volem xifrar
     private static final String TEXT_TO_ENCRYPT = "Document confidencial";
-    // Longitud del salt en bytes
+    // Mida del salt (en bytes)
     private static final int SALT_LENGTH = 16;
-    // Longitud del vector d'inicialització (IV) en bytes
+    // Mida del vector d'inicialització (IV) (en bytes); per AES, 16 bytes són 128 bits
     private static final int IV_LENGTH = 16;
-    // Nombre d'iteracions per al procés de derivació de clau
+    // Nombre d'iteracions per al mètode PBKDF2 (com a mesura de seguretat)
     private static final int ITERATIONS = 65536;
-    // Longitud de la clau generada (en bits)
+    // Mida de la clau generada (en bits): 128 bits
     private static final int KEY_LENGTH = 128;
 
     /**
      * Mètode principal per iniciar l'activitat.
-     * Realitza els passos següents:
-     * - Genera un salt i deriva una clau a partir de la contrasenya
-     * - Xifra un text utilitzant AES/CBC
-     * - Guarda els resultats en un fitxer CSV
-     * - Desxifra el text i verifica que coincideix amb l'original
+     *
+     * Els passos realitzats són:
+     * 1. Generar un salt aleatori i derivar la clau AES a partir de la contrasenya.
+     * 2. Xifrar el text "Document confidencial" amb AES/CBC.
+     * 3. Desa els resultats (text xifrat, IV i salt) en un fitxer CSV.
+     * 4. Desxifra el text i verifica que coincideix amb l'original.
      */
     public static void iniciar() {
         try {
-            // Mostra un encapçalament informatiu per a l'activitat
+            // Mostrem un encapçalament informatiu per a l'activitat
             Utilities.imprimirEncabezado("ACTIVITAT 2: CIFRAT I DESCIFRAT DE TEXT");
 
-            // 1. Generar el salt i derivar una clau a partir de la contrasenya
-            byte[] salt = generateSalt(); // Genera un salt aleatori
-            SecretKey secretKey = deriveKey(PASSWORD, salt); // Deriva la clau AES utilitzant el salt i la contrasenya
+            // 1. Generem un salt aleatori per a la derivació de la clau
+            byte[] salt = generateSalt();
+            // Derivem la clau AES a partir de la contrasenya i el salt
+            SecretKey secretKey = deriveKey(PASSWORD, salt);
             Utilities.imprimirExito("Clau AES generada a partir de la contrasenya.");
 
-            // 2. Configurar el xifrat amb AES/CBC/PKCS5Padding
+            // 2. Configuració del xifrat: creem el Cipher amb AES en mode CBC i PKCS5Padding
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            byte[] iv = generateIV(); // Genera un vector d'inicialització (IV) aleatori
-            IvParameterSpec ivSpec = new IvParameterSpec(iv); // Especifica el IV per al xifrat
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec); // Inicialitza el Cipher en mode xifrat
-            byte[] encryptedBytes = cipher.doFinal(TEXT_TO_ENCRYPT.getBytes(StandardCharsets.UTF_8)); // Xifra el text
-            String encryptedText = Base64.getEncoder().encodeToString(encryptedBytes); // Codifica el text xifrat en Base64
+            // Generem un IV aleatori de 16 bytes
+            byte[] iv = generateIV();
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            // Inicialitzem el Cipher en mode xifrat amb la clau derivada i el IV
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
+            // Xifrem el text (convertit a bytes)
+            byte[] encryptedBytes = cipher.doFinal(TEXT_TO_ENCRYPT.getBytes(StandardCharsets.UTF_8));
+            // Codifiquem el text xifrat en Base64 per poder-lo desar com a String
+            String encryptedText = Base64.getEncoder().encodeToString(encryptedBytes);
 
-            // 3. Guardar els resultats del xifrat en un fitxer CSV
+            // 3. Desa els resultats del xifrat (text xifrat, IV i salt) en un fitxer CSV
             guardarResultatsCSV(encryptedText, iv, salt);
 
-            // 4. Configurar el desxifrat i recuperar el text original
+            // 4. Configuració per al desxifrat:
+            // Inicialitzem un nou Cipher en mode desxifrat amb la mateixa clau i el mateix IV
             Cipher decipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            decipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec); // Inicialitza el Cipher en mode desxifrat
-            byte[] decryptedBytes = decipher.doFinal(Base64.getDecoder().decode(encryptedText)); // Desxifra el text
-            String decryptedText = new String(decryptedBytes, StandardCharsets.UTF_8); // Converteix el text desxifrat a String
+            decipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
+            // Desxifrem el text codificat en Base64
+            byte[] decryptedBytes = decipher.doFinal(Base64.getDecoder().decode(encryptedText));
+            // Convertim el resultat desxifrat a String utilitzant UTF-8
+            String decryptedText = new String(decryptedBytes, StandardCharsets.UTF_8);
 
-            // Mostra informació sobre el procés
+            // Mostrem la informació rellevant: text original, text xifrat i text desxifrat
             Utilities.imprimirInfo("Text original: " + TEXT_TO_ENCRYPT);
             Utilities.imprimirInfo("Text xifrat (Base64): " + encryptedText);
             Utilities.imprimirInfo("Text desxifrat: " + decryptedText);
 
-            // Verifica que el text desxifrat coincideix amb l'original
+            // Verifiquem que el text desxifrat és igual a l'original
             if (TEXT_TO_ENCRYPT.equals(decryptedText)) {
                 Utilities.imprimirExito("Verificació correcta: el text desxifrat coincideix amb l'original.");
             } else {
                 Utilities.imprimirError("Verificació fallida: el text desxifrat no coincideix.");
             }
-
         } catch (Exception e) {
-            // Mostra un error detallat si alguna cosa falla
+            // En cas que passi alguna excepció, es mostra l'error per consola
             Utilities.imprimirError("Error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     /**
-     * Genera un salt aleatori utilitzat per derivar la clau.
+     * Genera un salt aleatori, que s'utilitza per derivar la clau AES.
      *
-     * @return Array de bytes del salt.
+     * @return Array de bytes que representa el salt.
      */
     private static byte[] generateSalt() {
-        SecureRandom random = new SecureRandom(); // Inicialitza un generador de números aleatoris
-        byte[] salt = new byte[SALT_LENGTH]; // Crea un array de bytes de la longitud especificada
+        // Creem un SecureRandom per generar valors aleatoris segurs
+        SecureRandom random = new SecureRandom();
+        byte[] salt = new byte[SALT_LENGTH];
         random.nextBytes(salt); // Omple l'array amb valors aleatoris
-        return salt; // Retorna el salt generat
+        return salt;
     }
 
     /**
-     * Genera un vector d'inicialització (IV) aleatori utilitzat per al xifrat.
+     * Genera un vector d'inicialització (IV) aleatori.
      *
-     * @return Array de bytes del IV.
+     * @return Array de bytes que representa el IV.
      */
     private static byte[] generateIV() {
-        SecureRandom random = new SecureRandom(); // Inicialitza un generador de números aleatoris
-        byte[] iv = new byte[IV_LENGTH]; // Crea un array de bytes de la longitud especificada
-        random.nextBytes(iv); // Omple l'array amb valors aleatoris
-        return iv; // Retorna el IV generat
+        SecureRandom random = new SecureRandom();
+        byte[] iv = new byte[IV_LENGTH];
+        random.nextBytes(iv);
+        return iv;
     }
 
     /**
-     * Deriva una clau secreta a partir d'una contrasenya i un salt utilitzant PBKDF2.
+     * Deriva una clau secreta AES a partir d'una contrasenya i un salt,
+     * utilitzant el mètode PBKDF2 amb HMAC-SHA256.
      *
-     * @param password Contrasenya utilitzada per derivar la clau.
-     * @param salt     Salt utilitzat per assegurar la derivació.
-     * @return Clau secreta derivada.
-     * @throws Exception Si ocorre un error durant el procés de derivació.
+     * @param password La contrasenya comuna ("projecte2025").
+     * @param salt     El salt aleatori generat.
+     * @return La clau AES derivada.
+     * @throws Exception Si hi ha un error durant el procés de derivació.
      */
     private static SecretKey deriveKey(String password, byte[] salt) throws Exception {
-        // Utilitza l'algorisme PBKDF2 amb HMAC-SHA256 per derivar la clau
+        // Creem un SecretKeyFactory utilitzant l'algorisme PBKDF2 amb HMAC-SHA256
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATIONS, KEY_LENGTH); // Especifica els paràmetres
-        SecretKey tmp = factory.generateSecret(spec); // Genera una clau secreta temporal
-        return new javax.crypto.spec.SecretKeySpec(tmp.getEncoded(), "AES"); // Converteix la clau a un format compatible amb AES
+        // Especificació de la clau: contrasenya, salt, número d'iteracions i mida en bits
+        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATIONS, KEY_LENGTH);
+        SecretKey tmp = factory.generateSecret(spec);
+        // Convertim la clau temporal al format especific per AES
+        return new javax.crypto.spec.SecretKeySpec(tmp.getEncoded(), "AES");
     }
 
     /**
-     * Guarda els resultats del xifrat en un fitxer CSV.
-     * Cada fila conté el text xifrat, el IV i el salt codificats en Base64.
+     * Desa els resultats del xifrat en un fitxer CSV.
+     * El fitxer conté 3 columnes: Text Xifrat, IV i Salt (tots codificats en Base64).
      *
-     * @param encryptedText Text xifrat codificat en Base64.
-     * @param iv            Vector d'inicialització (IV) utilitzat durant el xifrat.
-     * @param salt          Salt utilitzat per derivar la clau.
-     * @throws IOException Si ocorre un error al escriure el fitxer.
+     * @param encryptedText El text xifrat (Base64).
+     * @param iv            El vector d'inicialització utilitzat (bytes).
+     * @param salt          El salt utilitzat per derivar la clau (bytes).
+     * @throws IOException Si hi ha un error en escriure el fitxer.
      */
     private static void guardarResultatsCSV(String encryptedText, byte[] iv, byte[] salt) throws IOException {
-        // Ruta del fitxer CSV dins del directori de treball de l'activitat
+        // Obtenim la ruta del directori de l'activitat 2 amb Utilities i la concatenem amb el nom del fitxer CSV
         Path ruta = Utilities.obtenerRutaActividad(2).resolve("resultats_activitat2.csv");
 
-        // Escriu les dades en format CSV
+        // Obrim un FileWriter per escriure el contingut en format CSV
         try (FileWriter writer = new FileWriter(ruta.toFile())) {
             writer.append("Text Xifrat,IV,Salt\n"); // Capçalera del CSV
-            writer.append(encryptedText).append(",") // Afegeix el text xifrat
-                    .append(Base64.getEncoder().encodeToString(iv)).append(",") // Afegeix el IV en Base64
-                    .append(Base64.getEncoder().encodeToString(salt)).append("\n"); // Afegeix el salt en Base64
-            Utilities.imprimirExito("Resultats guardats a: " + ruta.toString()); // Missatge d'èxit
+            // Escrivim cada camp separant-los amb comes i afegim un salt de línia al final
+            writer.append(encryptedText).append(",")
+                    .append(Base64.getEncoder().encodeToString(iv)).append(",")
+                    .append(Base64.getEncoder().encodeToString(salt)).append("\n");
+            Utilities.imprimirExito("Resultats guardats a: " + ruta.toString());
         }
     }
 }

@@ -14,11 +14,23 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 /**
- * Clase que maneja la Actividad 4: Cifrado y Descifrado de Archivos con AES y RSA.
+ * Activitat 4:
+ *
+ * Aquest programa implementa un procés de xifrat i desxifrat utilitzant una combinació d’AES i RSA.
+ *
+ * El procediment és el següent:
+ * 1. Es genera una clau simètrica AES que s'utilitza per xifrar el contingut del fitxer "entrada.txt".
+ * 2. La clau AES es xifra (envolta) amb la clau pública RSA. El concepte de "parell de claus" RSA
+ *    implica que tenim una clau privada (que es manté en secret) i una clau pública (que es pot distribuir).
+ *    La clau privada s'utilitza per desxifrar la clau embolcallada, i la clau pública per xifrar-la.
+ * 3. Es desa el fitxer xifrat ("sortida.enc"), el vector d’inicialització (iv.dat) i la clau embolcallada
+ *    ("clau_embolcallada.dat") en fitxers separats.
+ * 4. Per desxifrar, es recupera primer la clau AES desempaquetant-la amb la clau privada RSA, i després
+ *    s'utilitza aquesta clau AES per desxifrar el fitxer "sortida.enc", recuperant així el contingut original.
  */
 public class Activitat4 {
 
-    // Nombres de archivos
+    // Noms dels fitxers que s’utilitzen en el procés
     private static final String INPUT_FILE = "entrada.txt";
     private static final String ENCRYPTED_FILE = "sortida.enc";
     private static final String WRAPPED_KEY_FILE = "clau_embolcallada.dat";
@@ -27,31 +39,39 @@ public class Activitat4 {
     private static final String RSA_PRIVATE_KEY = "clau_privada.pem";
 
     /**
-     * Iniciar la actividad.
+     * Mètode principal que coordina totes les operacions de xifrat i desxifrat.
      */
     public static void iniciar() {
         try {
+            // Mostrem un encapçalament informatiu per indicar l'inici de l'activitat
             Utilities.imprimirEncabezado("ACTIVITAT 4: CIFRAT I DESXIFRAT DE FITXERS AMB AES I RSA");
 
-            // Obtener la ruta de la actividad 4
+            // Obtenim el directori on treballarem per a aquesta activitat (per exemple, output/activitat4/)
             Path activitat4Dir = Utilities.obtenerRutaActividad(4);
 
-            // Crear el archivo de entrada con información si no existe
+            // Creem el fitxer d'entrada "entrada.txt" amb informació predefinida si no existeix
             crearFitxerEntrada(activitat4Dir);
 
-            // Generar o cargar claves RSA
+            /*
+             * Generem o carreguem el parell de claus RSA.
+             * El parell de claus està format per:
+             *  - Una clau privada RSA: utilitzada per desxifrar o signar.
+             *  - Una clau pública RSA: utilitzada per xifrar o verificar.
+             */
             KeyPair rsaKeys = obtenirClausRSA(activitat4Dir);
 
-            // Generar clave simétrica AES
+            // Generem una clau simètrica AES que s'utilitzarà per xifrar el contingut del fitxer.
             SecretKey aesKey = generarClauAES();
 
-            // Cifrar el archivo de entrada con AES y guardar el archivo cifrado
+            // Xifrem el fitxer d'entrada amb AES en mode CBC i desem el fitxer xifrat "sortida.enc".
+            // També es guarda el vector d'inicialització (IV) en "iv.dat".
             xifrarFitxer(activitat4Dir, aesKey);
 
-            // Cifrar (envolver) la clave AES con la clave pública RSA y guardar la clave envolvuelta
+            // Xifrem (envoltem) la clau AES amb la clau pública RSA i desem aquesta clau embolcallada.
             xifrarClauAES(activitat4Dir, aesKey, rsaKeys.getPublic());
 
-            // Descifrar el archivo cifrado
+            // Desxifrem el fitxer: primer desempaquetem (unwrap) la clau AES amb la clau privada RSA,
+            // i després utilitzem la clau AES per desxifrar "sortida.enc" i recuperar el contingut original.
             desxifrarFitxer(activitat4Dir, rsaKeys.getPrivate());
 
         } catch (Exception e) {
@@ -61,9 +81,9 @@ public class Activitat4 {
     }
 
     /**
-     * Crear el archivo de entrada con información si no existe.
+     * Crea el fitxer d'entrada ("entrada.txt") amb contingut predefinit si no existeix.
      *
-     * @param activitat4Dir Ruta del directorio de la actividad 4.
+     * @param activitat4Dir La ruta del directori de la activitat 4.
      */
     private static void crearFitxerEntrada(Path activitat4Dir) {
         Path inputFile = activitat4Dir.resolve(INPUT_FILE);
@@ -84,11 +104,14 @@ public class Activitat4 {
     }
 
     /**
-     * Generar o cargar claves RSA.
+     * Genera o carrega un parell de claus RSA.
      *
-     * @param activitat4Dir Ruta del directorio de la actividad 4.
-     * @return Parell de claus RSA.
-     * @throws Exception Si ocurre un error durante la generación o carga de claves.
+     * Si els fitxers RSA (clau_publica.pem i clau_privada.pem) ja existeixen a la carpeta,
+     * les carrega; en cas contrari, genera un nou parell de claus RSA i desa les claus en format Base64.
+     *
+     * @param activitat4Dir La ruta del directori de la activitat 4.
+     * @return Un objecte KeyPair que conté la clau pública i privada RSA.
+     * @throws Exception En cas d'error durant la generació o càrrega de claus.
      */
     private static KeyPair obtenirClausRSA(Path activitat4Dir) throws Exception {
         Path publicKeyPath = activitat4Dir.resolve(RSA_PUBLIC_KEY);
@@ -98,13 +121,13 @@ public class Activitat4 {
         File privateKeyFile = privateKeyPath.toFile();
 
         if (publicKeyFile.exists() && privateKeyFile.exists()) {
-            // Cargar claves RSA existentes
+            // Carreguem les claus RSA existents
             PublicKey publicKey = carregarClauPublica(publicKeyPath);
             PrivateKey privateKey = carregarClauPrivada(privateKeyPath);
             Utilities.imprimirExito("Claus RSA carregades.");
             return new KeyPair(publicKey, privateKey);
         } else {
-            // Generar un nou parell de claus RSA
+            // Generem un nou parell de claus RSA
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
             keyGen.initialize(2048);
             KeyPair keyPair = keyGen.generateKeyPair();
@@ -119,42 +142,43 @@ public class Activitat4 {
     }
 
     /**
-     * Generar una clau simètrica AES.
+     * Genera una clau simètrica AES de 128 bits.
      *
-     * @return Clau AES generada.
-     * @throws NoSuchAlgorithmException Si el algoritmo AES no está disponible.
+     * @return La clau AES generada.
+     * @throws NoSuchAlgorithmException Si l'algoritme AES no està disponible.
      */
     private static SecretKey generarClauAES() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-        keyGen.init(128); // Clau de 128 bits
+        keyGen.init(128); // Especifica una clau de 128 bits
         SecretKey secretKey = keyGen.generateKey();
         Utilities.imprimirExito("Clau AES generada.");
         return secretKey;
     }
 
     /**
-     * Cifrar el archivo de entrada con AES y guardar el archivo cifrado.
+     * Xifra el contingut del fitxer d'entrada utilitzant AES en mode CBC.
+     * També genera un vector d'inicialització (IV) aleatori i el desa en un fitxer separat.
      *
-     * @param activitat4Dir Ruta del directorio de la actividad 4.
-     * @param aesKey        Clave AES para el cifrado.
-     * @throws Exception Si ocurre un error durante el cifrado.
+     * @param activitat4Dir La ruta del directori de la activitat 4.
+     * @param aesKey        La clau AES que s'utilitzarà per al xifrat.
+     * @throws Exception En cas d'error durant el procés de xifrat.
      */
     private static void xifrarFitxer(Path activitat4Dir, SecretKey aesKey) throws Exception {
         Path inputFile = activitat4Dir.resolve(INPUT_FILE);
         Path encryptedFile = activitat4Dir.resolve(ENCRYPTED_FILE);
         Path ivFile = activitat4Dir.resolve(IV_FILE);
 
-        // Generar IV aleatorio
+        // Generem un IV aleatori (vector d'inicialització) de 16 bytes per AES en mode CBC
         byte[] iv = new byte[16];
         SecureRandom secureRandom = new SecureRandom();
         secureRandom.nextBytes(iv);
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
-        // Inicializar Cipher para cifrado
+        // Inicialitzem el Cipher per xifrar utilitzant AES/CBC/PKCS5Padding
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.ENCRYPT_MODE, aesKey, ivSpec);
 
-        // Cifrar el contenido del archivo
+        // Llegeix el contingut del fitxer d'entrada i xifra el seu contingut
         try (FileInputStream fis = new FileInputStream(inputFile.toFile());
              FileOutputStream fos = new FileOutputStream(encryptedFile.toFile());
              CipherOutputStream cos = new CipherOutputStream(fos, cipher)) {
@@ -166,7 +190,7 @@ public class Activitat4 {
             }
         }
 
-        // Guardar el IV en un archivo separado
+        // Desa el IV en un fitxer separat perquè serà necessari per al descifrat
         try (FileOutputStream fosIV = new FileOutputStream(ivFile.toFile())) {
             fosIV.write(iv);
         }
@@ -176,24 +200,26 @@ public class Activitat4 {
     }
 
     /**
-     * Cifrar (envolver) la clau AES amb la clau pública RSA i guardar-la en un fitxer.
+     * Envolta (xifra) la clau AES utilitzant la clau pública RSA.
+     * Aquest mètode és important perquè protegeix la clau simètrica: només es podrà recuperar
+     * amb la clau privada RSA corresponent.
      *
-     * @param activitat4Dir Ruta del directorio de la actividad 4.
-     * @param aesKey        Clave AES a envolver.
-     * @param publicKey     Clave pública RSA.
-     * @throws Exception Si ocurre un error durante el envolvimiento de la clave.
+     * @param activitat4Dir La ruta del directori de la activitat 4.
+     * @param aesKey        La clau AES a embolcallar.
+     * @param publicKey     La clau pública RSA.
+     * @throws Exception En cas d'error durant el procés d'envoltament.
      */
     private static void xifrarClauAES(Path activitat4Dir, SecretKey aesKey, PublicKey publicKey) throws Exception {
         Path wrappedKeyPath = activitat4Dir.resolve(WRAPPED_KEY_FILE);
 
-        // Inicializar Cipher para envolvimiento
+        // Inicialitzem el Cipher en mode WRAP per embolcallar la clau AES
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.WRAP_MODE, publicKey);
 
-        // Envolver la clave AES
+        // Envoltem (xifrem) la clau AES
         byte[] wrappedKey = cipher.wrap(aesKey);
 
-        // Guardar la clave envolvuelta en un archivo
+        // Desa la clau embolcallada en un fitxer
         try (FileOutputStream fos = new FileOutputStream(wrappedKeyPath.toFile())) {
             fos.write(wrappedKey);
         }
@@ -202,34 +228,42 @@ public class Activitat4 {
     }
 
     /**
-     * Descifrar el archivo cifrado utilizando la clave AES recuperada.
+     * Desxifra el fitxer xifrat utilitzant la clau AES recuperada
+     * desempaquetant-la amb la clau privada RSA.
      *
-     * @param activitat4Dir Ruta del directorio de la actividad 4.
-     * @param privateKey    Clave privada RSA para desenvolver la clave AES.
-     * @throws Exception Si ocurre un error durante el descifrado.
+     * El procediment és:
+     * 1. Llegir el fitxer amb la clau AES embolcallada i desempaquetar-la amb la clau privada RSA.
+     * 2. Llegir el vector d'inicialització (IV).
+     * 3. Inicialitzar el Cipher per descifrar utilitzant AES/CBC/PKCS5Padding.
+     * 4. Descifrar el fitxer "sortida.enc" i desar el contingut en "fitxer_desxifrat.txt".
+     * 5. Mostrar el contingut desxifrat per la consola.
+     *
+     * @param activitat4Dir La ruta del directori de la activitat 4.
+     * @param privateKey    La clau privada RSA.
+     * @throws Exception En cas d'error durant el procés de descifrat.
      */
     private static void desxifrarFitxer(Path activitat4Dir, PrivateKey privateKey) throws Exception {
         Path encryptedFile = activitat4Dir.resolve(ENCRYPTED_FILE);
         Path wrappedKeyPath = activitat4Dir.resolve(WRAPPED_KEY_FILE);
         Path ivFile = activitat4Dir.resolve(IV_FILE);
 
-        // Leer la clave AES envolvuelta
+        // Llegim la clau AES embolcallada del fitxer
         byte[] wrappedKey = carregarBytes(wrappedKeyPath.toFile());
 
-        // Desenvolver la clave AES con la clave privada RSA
+        // Desenvolpem la clau AES amb la clau privada RSA
         Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipherRSA.init(Cipher.UNWRAP_MODE, privateKey);
         SecretKey aesKey = (SecretKey) cipherRSA.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
 
-        // Leer el IV
+        // Llegim el vector d'inicialització (IV) del fitxer
         byte[] iv = carregarBytes(ivFile.toFile());
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
-        // Inicializar Cipher para descifrado
+        // Inicialitzem el Cipher per descifrar utilitzant AES/CBC/PKCS5Padding
         Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipherAES.init(Cipher.DECRYPT_MODE, aesKey, ivSpec);
 
-        // Descifrar el contenido del archivo cifrado
+        // Desxifrem el fitxer xifrat i desem el contingut original en "fitxer_desxifrat.txt"
         Path decryptedFile = activitat4Dir.resolve("fitxer_desxifrat.txt");
         try (FileInputStream fis = new FileInputStream(encryptedFile.toFile());
              CipherInputStream cis = new CipherInputStream(fis, cipherAES);
@@ -244,18 +278,18 @@ public class Activitat4 {
 
         Utilities.imprimirExito("Fitxer desxifrat desat a: " + decryptedFile.toString());
 
-        // Mostrar el contenido desxifrat en la consola
+        // Llegim i mostrem el contingut desxifrat del fitxer per consola
         String contenidoDesxifrat = new String(Files.readAllBytes(decryptedFile), StandardCharsets.UTF_8);
         Utilities.imprimirInfo("Contingut desxifrat del fitxer:");
         System.out.println(contenidoDesxifrat);
     }
 
     /**
-     * Cargar los bytes de un archivo.
+     * Carrega els bytes d'un fitxer.
      *
-     * @param file Archivo a leer.
-     * @return Array de bytes leídos.
-     * @throws IOException Si ocurre un error al leer el archivo.
+     * @param file El fitxer a llegir.
+     * @return Un array de bytes amb el contingut del fitxer.
+     * @throws IOException Si hi ha un error en la lectura del fitxer.
      */
     private static byte[] carregarBytes(File file) throws IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
@@ -264,11 +298,11 @@ public class Activitat4 {
     }
 
     /**
-     * Cargar una clau pública RSA desde un archivo.
+     * Carrega una clau pública RSA des d'un fitxer en format Base64.
      *
-     * @param publicKeyPath Ruta del archivo de la clau pública.
-     * @return Clau pública RSA.
-     * @throws Exception Si ocurre un error al cargar la clau pública.
+     * @param publicKeyPath La ruta del fitxer que conté la clau pública.
+     * @return La clau pública RSA.
+     * @throws Exception Si hi ha un error en la càrrega.
      */
     private static PublicKey carregarClauPublica(Path publicKeyPath) throws Exception {
         byte[] keyBytes = carregarBytes(publicKeyPath.toFile());
@@ -279,11 +313,11 @@ public class Activitat4 {
     }
 
     /**
-     * Cargar una clau privada RSA desde un archivo.
+     * Carrega una clau privada RSA des d'un fitxer en format Base64.
      *
-     * @param privateKeyPath Ruta del archivo de la clau privada.
-     * @return Clau privada RSA.
-     * @throws Exception Si ocurre un error al cargar la clau privada.
+     * @param privateKeyPath La ruta del fitxer que conté la clau privada.
+     * @return La clau privada RSA.
+     * @throws Exception Si hi ha un error en la càrrega.
      */
     private static PrivateKey carregarClauPrivada(Path privateKeyPath) throws Exception {
         byte[] keyBytes = carregarBytes(privateKeyPath.toFile());
@@ -294,11 +328,11 @@ public class Activitat4 {
     }
 
     /**
-     * Guardar una clau en un archivo en formato Base64.
+     * Desa una clau en un fitxer en format Base64.
      *
-     * @param keyPath Ruta del archivo donde se guardará la clau.
-     * @param keyBytes Array de bytes de la clau.
-     * @throws IOException Si ocurre un error al escribir el archivo.
+     * @param keyPath  La ruta del fitxer on es desa la clau.
+     * @param keyBytes Un array de bytes que representa la clau.
+     * @throws IOException Si hi ha un error en l'escriptura del fitxer.
      */
     private static void guardarClau(Path keyPath, byte[] keyBytes) throws IOException {
         String encodedKey = Base64.getEncoder().encodeToString(keyBytes);

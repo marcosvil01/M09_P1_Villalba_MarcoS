@@ -28,17 +28,11 @@ public class Utilities {
 
     // Enumeración para colores de texto
     public enum ColorTexto {
-        NEGRO("\u001B[30m"),
-        ROJO("\u001B[31m"),
-        VERDE("\u001B[32m"),
         AMARILLO("\u001B[33m"),
         AZUL("\u001B[34m"),
-        MAGENTA("\u001B[35m"),
         CIAN("\u001B[36m"),
-        BLANCO("\u001B[37m"),
         BRILLANTE_ROJO("\u001B[91m"),
-        BRILLANTE_VERDE("\u001B[92m"),
-        BRILLANTE_AMARILLO("\u001B[93m");
+        BRILLANTE_VERDE("\u001B[92m");
 
         private final String codigo;
 
@@ -51,36 +45,13 @@ public class Utilities {
         }
     }
 
-    // Enumeración para colores de fondo
-    public enum ColorFondo {
-        FONDO_NEGRO("\u001B[40m"),
-        FONDO_ROJO("\u001B[41m"),
-        FONDO_VERDE("\u001B[42m"),
-        FONDO_AMARILLO("\u001B[43m"),
-        FONDO_AZUL("\u001B[44m"),
-        FONDO_MAGENTA("\u001B[45m"),
-        FONDO_CIAN("\u001B[46m"),
-        FONDO_BLANCO("\u001B[47m");
-
-        private final String codigo;
-
-        ColorFondo(String codigo) {
-            this.codigo = codigo;
-        }
-
-        public String getCodigo() {
-            return codigo;
-        }
-    }
-
     // Símbolos útiles
     public static final String FLECHA = "→";
-    public static final String CHECK = "\u2713"; // ✓
-    public static final String CRUZ = "\u2717";  // ✗
-    public static final String ESTRELLA = "\u2605"; // ★
-    public static final String INFO = "\u2139\uFE0F"; // ℹ️
-    public static final String WARN = "\u26A0\uFE0F"; // ⚠️
-    public static final String SUCCESS = "\u2714\uFE0F"; // ✔️
+    public static final String CRUZ = "✗";  // ✗
+    public static final String ESTRELLA = "★"; // ★
+    public static final String INFO = "ℹ️"; // ℹ️
+    public static final String WARN = "⚠️"; // ⚠️
+    public static final String SUCCESS = "✔️"; // ✔️
 
     // Ruta base para las salidas
     private static final Path RUTA_BASE = Paths.get("output");
@@ -94,24 +65,15 @@ public class Utilities {
         File carpeta = ruta.toFile();
         if (!carpeta.exists()) {
             if (carpeta.mkdirs()) {
-                imprimirMensaje("Carpeta creada: " + ruta.toString(), ColorTexto.BRILLANTE_VERDE, Estilo.NEGRITA);
+                imprimirMensaje(SUCCESS + " Carpeta creada: " + ruta, ColorTexto.BRILLANTE_VERDE, Estilo.NEGRITA);
             } else {
-                imprimirMensaje("Error al crear la carpeta: " + ruta.toString(), ColorTexto.BRILLANTE_ROJO, Estilo.NEGRITA);
+                imprimirMensaje(CRUZ + " Error al crear la carpeta: " + ruta, ColorTexto.BRILLANTE_ROJO, Estilo.NEGRITA);
             }
         } else {
-            imprimirMensaje("La carpeta ya existe: " + ruta.toString(), ColorTexto.AZUL, Estilo.SUBRAYADO);
+            imprimirMensaje(" La carpeta ya existe: " + ruta, ColorTexto.AZUL, Estilo.SUBRAYADO);
         }
     }
 
-    /**
-     * Obtener la ruta base de las carpetas de salida.
-     *
-     * @return Ruta de la carpeta base.
-     */
-    public static Path obtenerRutaOutput() {
-        crearCarpeta(RUTA_BASE);
-        return RUTA_BASE;
-    }
 
     /**
      * Obtener la ruta específica para una actividad.
@@ -142,9 +104,9 @@ public class Utilities {
         }
 
         if (algunaCarpetaCreada) {
-            imprimirMensaje("Carpetas de las actividades creadas automáticamente.", ColorTexto.BRILLANTE_VERDE, Estilo.NEGRITA);
+            imprimirMensaje(SUCCESS + " Carpetas de las actividades creadas automáticamente.", ColorTexto.BRILLANTE_VERDE, Estilo.NEGRITA);
         } else {
-            imprimirMensaje("Todas las carpetas ya existían, no se ha creado ninguna carpeta nueva.", ColorTexto.AZUL, Estilo.SUBRAYADO);
+            imprimirMensaje(CRUZ + " Todas las carpetas ya existían, no se ha creado ninguna carpeta nueva.", ColorTexto.AZUL, Estilo.SUBRAYADO);
         }
     }
 
@@ -157,27 +119,6 @@ public class Utilities {
      */
     public static void imprimirMensaje(String texto, ColorTexto color, Estilo estilo) {
         System.out.println(estilo.getCodigo() + color.getCodigo() + texto + Estilo.RESET.getCodigo());
-    }
-
-    /**
-     * Imprimir un mensaje con color.
-     *
-     * @param texto El texto a imprimir.
-     * @param color El color del texto.
-     */
-    public static void imprimirConColor(String texto, ColorTexto color) {
-        System.out.println(color.getCodigo() + texto + Estilo.RESET.getCodigo());
-    }
-
-    /**
-     * Imprimir un mensaje con color y fondo.
-     *
-     * @param texto El texto a imprimir.
-     * @param color El color del texto.
-     * @param fondo El color de fondo.
-     */
-    public static void imprimirConColorFondo(String texto, ColorTexto color, ColorFondo fondo) {
-        System.out.println(color.getCodigo() + fondo.getCodigo() + texto + Estilo.RESET.getCodigo());
     }
 
     /**
@@ -277,7 +218,7 @@ public class Utilities {
         }
 
         // Imprimir el encabezado de la tabla
-        System.out.println(separador.toString());
+        System.out.println(separador);
         System.out.print("|");
         for (int i = 0; i < encabezados.length; i++) {
             System.out.print(" " + Estilo.SUBRAYADO.getCodigo() + encabezados[i] + Estilo.RESET.getCodigo());
@@ -287,7 +228,7 @@ public class Utilities {
             System.out.print("|");
         }
         System.out.println();
-        System.out.println(separador.toString());
+        System.out.println(separador);
 
         // Imprimir las filas de la tabla
         for (String[] fila : filas) {
@@ -301,6 +242,6 @@ public class Utilities {
             }
             System.out.println();
         }
-        System.out.println(separador.toString());
+        System.out.println(separador);
     }
 }
