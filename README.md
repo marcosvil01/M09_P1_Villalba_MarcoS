@@ -24,7 +24,7 @@ Tota la interfície i els missatges de l'aplicació estan en català per manteni
 ESTRUCTURA DEL PROJECTE
 ------------------------  
 El projecte està organitzat de la següent manera:
-
+```
 M09_P1_Villalba_MarcoS/  
 ├── src/  
 │   └── main/  
@@ -45,7 +45,7 @@ M09_P1_Villalba_MarcoS/
 │           │   └── Utilities.java  
 │           └── MainApp.java  
 └── pom.xml
-
+```
 - **Functions/Utilities.java:**  
   Aquesta classe conté mètodes i constants útils per a tota l'aplicació: gestió de rutes, creació de carpetes, impressió de missatges estilitzats (errors, advertències, èxit) i creació de menús interactius.
 
